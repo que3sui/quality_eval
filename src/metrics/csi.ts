@@ -9,7 +9,7 @@ export function computeCSI(
   try {
     // Get checkpoint commits from oldest to newest
     const log = execSync(
-      'git log --oneline --grep="checkpoint \\[agent-eff\\]" --format="%H" --reverse',
+      'git log --oneline --fixed-strings --grep="agent-eff checkpoint" --format="%H" --reverse',
       {
         cwd,
         encoding: "utf-8",

@@ -18,7 +18,7 @@ export function checkpointCommand(): void {
 
   try {
     execSync("git add -A", { cwd, stdio: "ignore", timeout: 3000 });
-    execSync('git commit -m "checkpoint [agent-eff]"', {
+    execSync('git commit -m "agent-eff checkpoint"', {
       cwd,
       stdio: "ignore",
       timeout: 5000,
