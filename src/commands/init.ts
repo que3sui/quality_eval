@@ -122,9 +122,9 @@ allowed-tools: Bash
    - \`json\` → \`--latest --format json\`
    - \`quality\` → \`--latest --quality\`
 
-2. 运行命令：
+2. 运行命令（优先用 agent-eff，找不到则用绝对路径）：
 \`\`\`bash
-node ${cmd} analyze --latest
+agent-eff analyze --latest || node ${cmd} analyze --latest
 \`\`\`
 
 3. 将命令的表格输出直接展示在对话中。
@@ -149,11 +149,12 @@ export async function initCommand(options: { write?: boolean }): Promise<void> {
     llm: DEFAULT_LLM_CONFIG,
   });
 
-  // Install skill: .claude/skills/score/SKILL.md
-  const skillDir = path.join(cwd, ".claude", "skills", "score");
-  fs.mkdirSync(skillDir, { recursive: true });
+  // Install skill globally: ~/.claude/skills/score/SKILL.md
+  const homeDir = process.env.HOME || process.env.USERPROFILE || "~";
+  const globalSkillDir = path.join(homeDir, ".claude", "skills", "score");
+  fs.mkdirSync(globalSkillDir, { recursive: true });
   fs.writeFileSync(
-    path.join(skillDir, "SKILL.md"),
+    path.join(globalSkillDir, "SKILL.md"),
     generateSkillContent(entryScript),
     "utf-8",
   );
