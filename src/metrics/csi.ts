@@ -42,7 +42,7 @@ export function computeCSI(
 
     for (const commit of commits) {
       // Get changed files and added lines
-      const numstat = execSync(`git diff --numstat ${commit}^..${commit}`, {
+      const numstat = execSync(`git diff --numstat ${commit}~1..${commit}`, {
         cwd,
         encoding: "utf-8",
         stdio: ["pipe", "pipe", "ignore"],
