@@ -1,0 +1,25 @@
+{
+  "PostToolUse": [
+    {
+      "matcher": "Read|Write|Edit|Grep|Glob|Bash",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "agent-eff record post-tool",
+          "timeout": 5
+        }
+      ]
+    }
+  ],
+  "Stop": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "agent-eff record session-stop",
+          "timeout": 10
+        }
+      ]
+    }
+  ]
+}
