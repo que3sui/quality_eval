@@ -7,31 +7,46 @@ import {
   DEFAULT_LLM_CONFIG,
 } from "../types/config";
 
-const HOOK_CONFIG_TEMPLATE = {
-  PostToolUse: [
-    {
-      matcher: "Read|Write|Edit|Grep|Glob|Bash",
-      hooks: [
-        {
-          type: "command",
-          command: "agent-eff record post-tool",
-          timeout: 5,
-        },
-      ],
-    },
-  ],
-  Stop: [
-    {
-      hooks: [
-        {
-          type: "command",
-          command: "agent-eff record session-stop",
-          timeout: 10,
-        },
-      ],
-    },
-  ],
-};
+function resolveEntryScript(): string {
+  // Resolve the compiled dist/index.js from this source file's location
+  return path.resolve(__dirname, "..", "index.js");
+}
+
+function buildHookConfig(entryScript: string) {
+  const cmd = pathToShellArg(entryScript);
+  return {
+    PostToolUse: [
+      {
+        matcher: "Read|Write|Edit|Grep|Glob|Bash",
+        hooks: [
+          {
+            type: "command",
+            command: `node ${cmd} record post-tool`,
+            timeout: 5,
+          },
+        ],
+      },
+    ],
+    Stop: [
+      {
+        hooks: [
+          {
+            type: "command",
+            command: `node ${cmd} record session-stop`,
+            timeout: 10,
+          },
+        ],
+      },
+    ],
+  };
+}
+
+function pathToShellArg(p: string): string {
+  // Wrap in quotes and use forward slashes for cross-platform compatibility
+  const normalized = p.replace(/\\/g, "/");
+  // Escape double-quotes in path if any
+  return `"${normalized.replace(/"/g, '\\"')}"`;
+}
 
 function findSettingsJson(cwd: string): string | null {
   // Check project-local first
@@ -46,18 +61,44 @@ function findSettingsJson(cwd: string): string | null {
 
 function mergeHooksInto(
   existing: Record<string, unknown>,
-  hooks: Record<string, unknown>,
+  newHookConfig: Record<string, unknown>,
 ): Record<string, unknown> {
   const result = { ...existing };
   const existingHooks = (result.hooks as Record<string, unknown[]>) || {};
 
-  for (const [hookPoint, configs] of Object.entries(hooks)) {
-    const existingConfigs = existingHooks[hookPoint] || [];
-    existingHooks[hookPoint] = [...existingConfigs, ...(configs as unknown[])];
+  for (const [hookPoint, newEntries] of Object.entries(newHookConfig)) {
+    const existingEntries = (existingHooks[hookPoint] || []) as Record<
+      string,
+      unknown
+    >[];
+
+    for (const newEntry of newEntries as Record<string, unknown>[]) {
+      const newMatcher = newEntry.matcher as string | undefined;
+      const newCommands = extractHookCommands(newEntry);
+
+      // Check if an entry with the same matcher and commands already exists
+      const isDuplicate = existingEntries.some((existing) => {
+        if (newMatcher && existing.matcher !== newMatcher) return false;
+        const existingCommands = extractHookCommands(existing);
+        return newCommands.every((cmd) => existingCommands.includes(cmd));
+      });
+
+      if (!isDuplicate) {
+        existingEntries.push(newEntry);
+      }
+    }
+
+    existingHooks[hookPoint] = existingEntries;
   }
 
   result.hooks = existingHooks;
   return result;
+}
+
+function extractHookCommands(entry: Record<string, unknown>): string[] {
+  const hooks = entry.hooks as Array<{ command?: string }> | undefined;
+  if (!hooks) return [];
+  return hooks.map((h) => h.command || "").filter(Boolean);
 }
 
 export async function initCommand(options: { write?: boolean }): Promise<void> {
@@ -78,7 +119,8 @@ export async function initCommand(options: { write?: boolean }): Promise<void> {
     const settingsPath = findSettingsJson(cwd);
     if (settingsPath) {
       const existing = JSON.parse(fs.readFileSync(settingsPath, "utf-8"));
-      const merged = mergeHooksInto(existing, HOOK_CONFIG_TEMPLATE);
+      const hookConfig = buildHookConfig(resolveEntryScript());
+      const merged = mergeHooksInto(existing, hookConfig);
       fs.writeFileSync(
         settingsPath,
         JSON.stringify(merged, null, 2) + "\n",
@@ -90,15 +132,16 @@ export async function initCommand(options: { write?: boolean }): Promise<void> {
       const claudeDir = path.join(cwd, ".claude");
       fs.mkdirSync(claudeDir, { recursive: true });
       const newPath = path.join(claudeDir, "settings.local.json");
+      const hookConfig = buildHookConfig(resolveEntryScript());
       fs.writeFileSync(
         newPath,
-        JSON.stringify({ hooks: HOOK_CONFIG_TEMPLATE }, null, 2) + "\n",
+        JSON.stringify({ hooks: hookConfig }, null, 2) + "\n",
         "utf-8",
       );
       console.log(`  Created: ${newPath}`);
     }
   } else {
     console.log("\n  Add this to your .claude/settings.json hooks section:\n");
-    console.log(JSON.stringify(HOOK_CONFIG_TEMPLATE, null, 2));
+    console.log(JSON.stringify(buildHookConfig(resolveEntryScript()), null, 2));
   }
 }
