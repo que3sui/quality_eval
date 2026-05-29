@@ -4,6 +4,8 @@ import { computeEPR } from "../metrics/epr";
 import { computeFAA } from "../metrics/faa";
 import { computeTP } from "../metrics/tp";
 import { computeIC } from "../metrics/ic";
+import { computeLPR } from "../metrics/lpr";
+import { computeCE } from "../metrics/ce";
 import { computeComposite } from "../metrics/composite";
 import { renderTable } from "../display/table";
 import type { ToolCallEvent } from "../types/events";
@@ -53,6 +55,8 @@ export async function analyzeCommand(options: {
       FAA: computeFAA(iterations),
       TP: computeTP(calls),
       IC: computeIC(iterations),
+      LPR: computeLPR(calls),
+      CE: computeCE(iterations),
     };
 
     const composite = computeComposite(metrics);
