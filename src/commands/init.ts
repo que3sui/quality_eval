@@ -105,7 +105,7 @@ function generateSkillContent(entryScript: string): string {
   const cmd = pathToShellArg(entryScript);
   return `# Agent-Eff Skill
 
-当用户输入 \`/eff\` 或询问"当前效率"、"效率分数"、"agent efficiency"时，执行以下操作：
+当用户输入 \`/eval\` 或询问"当前效率"、"效率分数"、"agent efficiency"时，执行以下操作：
 
 ## 步骤
 
@@ -126,9 +126,9 @@ node ${cmd} analyze --latest
 
 ## 可选参数
 
-- \`/eff all\` — 分析所有历史会话
-- \`/eff json\` — 输出 JSON 格式
-- \`/eff quality\` — 启用 Tier 3 质量分析（需要 Ollama）
+- \`/eval all\` — 分析所有历史会话
+- \`/eval json\` — 输出 JSON 格式
+- \`/eval quality\` — 启用 Tier 3 质量分析（需要 Ollama）
 `;
 }
 
@@ -156,7 +156,7 @@ export async function initCommand(options: { write?: boolean }): Promise<void> {
   console.log("  Agent-Eff initialized!");
   console.log(`  Data directory: ${path.join(cwd, ".agent-eff")}`);
   console.log(
-    `  Skill installed: type /eff in Claude Code to check efficiency`,
+    `  Skill installed: type /eval in Claude Code to check efficiency`,
   );
 
   if (options.write) {
