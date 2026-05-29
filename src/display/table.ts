@@ -1,7 +1,7 @@
 import { style, colorForValue, dotForValue, gradeBadge } from "./ansi";
 import type { CompositeResult } from "../types/metrics";
 
-const BAR_W = 16;
+const BAR_W = 8;
 
 function bar(pct: number): string {
   const c = Math.max(0, Math.min(1, pct));
@@ -23,9 +23,6 @@ const L: Record<string, string> = {
   DC: "决策一致",
 };
 
-const W = 68;
-const GAP = "  ";
-
 export function renderTable(
   _m: unknown,
   composite: CompositeResult,
@@ -39,40 +36,28 @@ export function renderTable(
     composite.composite !== null ? `${(cv * 100).toFixed(0)}%` : "--";
   const badge = composite.composite !== null ? gradeBadge(cv) : "";
   const cvColor = colorForValue(cv);
-  const info = `${iterations}次迭代 · ${toolCalls}次调用 · ${filesChanged}个文件`;
 
-  // Build metric rows — 2 columns
-  const rows: string[] = [];
-  for (let i = 0; i < composite.details.length; i += 2) {
-    rows.push(metricRow(composite.details[i], composite.details[i + 1]));
+  const chips: string[] = [];
+  for (const d of composite.details) {
+    chips.push(chip(d.name, d.value));
   }
 
-  return `
-  ${style.bold("Agent-Eff")}  ${cvColor(style.bold(cvStr))} ${badge}
-  ${style.dim(info)}
+  // Arrange in 2 rows: first 4 metrics, last 4 metrics
+  const top = chips.slice(0, 4).join("  ");
+  const bot = chips.slice(4, 8).join("  ");
 
-${rows.join("\n")}
-
-  ${style.dim(`session ${sessionId.substring(0, 12)}`)}
-`;
+  return `${style.bold("Agent-Eff")} ${cvColor(style.bold(cvStr))} ${badge}  ${style.dim(`${iterations}iter ${toolCalls}call`)}
+${top}
+${bot}`;
 }
 
-function metricRow(
-  a: { name: string; value: number | null; weight: number },
-  b?: { name: string; value: number | null; weight: number },
-): string {
-  return `  ${renderCard(a)}${GAP}${b ? renderCard(b) : ""}`;
-}
-
-function renderCard(d: { name: string; value: number | null }): string {
-  const label = L[d.name] || d.name;
-  if (d.value === null) {
-    const na = style.dim("· N/A".padStart(BAR_W + 4));
-    return `${style.dim("◌")} ${style.dim(label.padEnd(8))}  ${na}`;
+function chip(name: string, val: number | null): string {
+  const label = L[name] || name;
+  if (val === null) {
+    return `${style.dim(label + " ·")}`;
   }
-  const color = colorForValue(d.value);
-  const dot = dotForValue(d.value);
-  const b = bar(d.value).padEnd(BAR_W, " ");
-  const pct = `${(d.value * 100).toFixed(0)}%`;
-  return `${dot} ${style.bold(label.padEnd(8))} ${color(b)} ${color(pct.padStart(4))}`;
+  const color = colorForValue(val);
+  const b = bar(val).padEnd(BAR_W, " ");
+  const pct = `${(val * 100).toFixed(0)}%`;
+  return `${dotForValue(val)}${style.bold(label)} ${color(b)}${color(pct)}`;
 }
