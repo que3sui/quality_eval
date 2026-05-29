@@ -15,6 +15,18 @@ function resolveEntryScript(): string {
 function buildHookConfig(entryScript: string) {
   const cmd = pathToShellArg(entryScript);
   return {
+    PreToolUse: [
+      {
+        matcher: "Read|Write|Edit|Grep|Glob|Bash",
+        hooks: [
+          {
+            type: "command",
+            command: `node ${cmd} checkpoint`,
+            timeout: 10,
+          },
+        ],
+      },
+    ],
     PostToolUse: [
       {
         matcher: "Read|Write|Edit|Grep|Glob|Bash",

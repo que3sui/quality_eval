@@ -40,6 +40,14 @@ program
   });
 
 program
+  .command("checkpoint")
+  .description("Auto-commit if enough time passed (called by PreToolUse hook)")
+  .action(() => {
+    const { checkpointCommand } = require("./commands/checkpoint");
+    checkpointCommand();
+  });
+
+program
   .command("config")
   .description("View or modify configuration")
   .action(async () => {
